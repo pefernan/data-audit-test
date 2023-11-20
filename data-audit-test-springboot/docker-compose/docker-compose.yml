@@ -21,35 +21,6 @@ version: '2.1'
 
 services:
 
-  postgres:
-    container_name: postgres
-    image: postgres:13.4-alpine3.14
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./sql:/docker-entrypoint-initdb.d:Z
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-q", "-d", "kogito", "-U", "kogito-user" ]
-      timeout: 45s
-      interval: 10s
-      retries: 50
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-
-  pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4:7.8
-    ports:
-      - 8055:80
-    depends_on:
-      - postgres
-    volumes:
-      - ./pgadmin/servers.json:/pgadmin4/servers.json
-    environment:
-      PGADMIN_DEFAULT_EMAIL: user@user.org
-      PGADMIN_DEFAULT_PASSWORD: pass
-
   zookeeper:
     container_name: zookeeper
     image: strimzi/kafka:0.20.1-kafka-2.6.0
@@ -84,31 +55,34 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       LOG_DIR: "/tmp/logs"
 
-  keycloak:
-    container_name: keycloak
-    image: quay.io/keycloak/keycloak:legacy
+  postgres:
+    container_name: postgres
+    image: postgres:13.4-alpine3.14
     ports:
-      - "8480:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "5432:5432"
     volumes:
-      - ./keycloak/kogito-realm.json:/tmp/kogito-realm.json
+      - ./sql:/docker-entrypoint-initdb.d:Z
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito" ]
-      interval: 2s
-      timeout: 1s
+      test: [ "CMD", "pg_isready", "-q", "-d", "kogito", "-U", "kogito-user" ]
+      timeout: 45s
+      interval: 10s
       retries: 50
     environment:
-      DB_VENDOR: POSTGRES
-      DB_ADDR: postgres
-      DB_DATABASE: kogito
-      DB_USER: kogito-user
-      DB_SCHEMA: public
-      DB_PASSWORD: kogito-pass
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
-      KEYCLOAK_IMPORT: /tmp/kogito-realm.json
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+#  pgadmin:
+#    container_name: pgadmin
+#    image: dpage/pgadmin4:7.8
+#    ports:
+#      - 8055:80
+#    depends_on:
+#      - postgres
+#    volumes:
+#      - ./pgadmin/servers.json:/pgadmin4/servers.json
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: user@user.org
+#      PGADMIN_DEFAULT_PASSWORD: pass
 
   data-index:
     container_name: data-index
@@ -151,10 +125,61 @@ services:
       QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql://postgres:5432/kogito"
       QUARKUS_DATASOURCE_USERNAME: kogito-user
       QUARKUS_DATASOURCE_PASSWORD: kogito-pass
+      QUARKUS_FLYWAY_TABLE: FLYWAY_JOBS_SERVICE
       QUARKUS_FLYWAY_BASELINE_ON_MIGRATE: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      QUARKUS_PROFILE: events-support
       QUARKUS_HTTP_CORS_ORIGINS: "/.*/"
+    extra_hosts:
+      - "${DOCKER_GATEWAY_HOST}:host-gateway"
+
+  kogito-example-service:
+    container_name: kogito-example-service
+    image: dev.local/${USER}/kogito-example-service-springboot:1.0-SNAPSHOT
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kogito
+      KOGITO_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8080
+      KOGITO_DATAINDEX_HTTP_URL: http://${DOCKER_GATEWAY_HOST}:8180
+      KOGITO_JOBS_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8580
+      KOGITO_SPRINGBOOT_PROPS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    extra_hosts:
+      - "${DOCKER_GATEWAY_HOST}:host-gateway"
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:legacy
+    ports:
+      - "8480:8080"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./keycloak/kogito-realm.json:/tmp/kogito-realm.json
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth/realms/kogito" ]
+      interval: 2s
+      timeout: 2s
+      retries: 100
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: kogito-user
+      DB_SCHEMA: public
+      DB_PASSWORD: kogito-pass
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_IMPORT: /tmp/kogito-realm.json
 
   management-console:
     container_name: management-console
@@ -185,25 +210,3 @@ services:
     environment:
       KOGITO_DATAINDEX_HTTP_URL: http://${DOCKER_GATEWAY_HOST:-host.docker.internal}:8180/graphql
       KOGITO_TASK_CONSOLE_PROPS: -Dkogito.consoles.keycloak.config.url=http://localhost:8480/auth -Dkogito.consoles.keycloak.config.health-check-url=http://localhost:8480/auth/realms/kogito/.well-known/openid-configuration
-
-  process-usertasks-springboot-with-console:
-    container_name: process-usertasks-springboot-with-console
-    image: org.kie.kogito.examples/process-usertasks-springboot-with-console:1.0
-    ports:
-      - 8080:8080
-    depends_on:
-      postgres:
-          condition: service_healthy
-      data-index:
-          condition: service_started
-    environment:
-      QUARKUS_HTTP_CORS_ORIGINS: "/.*/"
-      QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://postgres:5432/kogito"
-      QUARKUS_DATASOURCE_USERNAME: kogito-user
-      QUARKUS_DATASOURCE_PASSWORD: kogito-pass
-      QUARKUS_DATASOURCE_DB_KIND: postgresql
-      KOGITO_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8080
-      KOGITO_DATAINDEX_HTTP_URL: http://${DOCKER_GATEWAY_HOST}:8180
-      KOGITO_SPRINGBOOT_JVM_PROPS: -Dkogito.persistence.type=jdbc -Dspring.datasource.url=jdbc:postgresql://localhost:5432/kogito -Dspring.datasource.username=kogito-user -Dspring.datasource.password=kogito-pass
-    extra_hosts:
-      - "${DOCKER_GATEWAY_HOST}:host-gateway"

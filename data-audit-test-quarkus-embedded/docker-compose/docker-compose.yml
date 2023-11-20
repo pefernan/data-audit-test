@@ -38,6 +38,7 @@ services:
     profiles: [ "infra", "example", "full" ]
     ports:
       - "8180:8080"
+      - "5006:5005"
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,6 +54,7 @@ services:
       QUARKUS_FLYWAY_TABLE: FLYWAY_DATAINDEX_SERVICE
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
       KOGITO_DATA_INDEX_QUARKUS_PROFILE: "http-events-support"
+      KOGITO_DATA_INDEX_PROPS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     extra_hosts:
       - "${DOCKER_GATEWAY_HOST}:host-gateway"
 
@@ -62,6 +64,7 @@ services:
     profiles: ["example", "full"]
     ports:
       - "8080:8080"
+      - "5005:5005"
     depends_on:
       data-index:
         condition: service_started
@@ -71,10 +74,10 @@ services:
       QUARKUS_DATASOURCE_USERNAME: kogito-user
       QUARKUS_DATASOURCE_PASSWORD: kogito-pass
       QUARKUS_DATASOURCE_DB_KIND: postgresql
-      KOGITO_JOBS_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8580
+      KOGITO_JOBS_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8080
       KOGITO_SERVICE_URL: http://${DOCKER_GATEWAY_HOST}:8080
       KOGITO_DATAINDEX_HTTP_URL: http://${DOCKER_GATEWAY_HOST}:8180
-      KOGITO_QUARKUS_JVM_PROPS: -Dquarkus.datasource.data-audit-ds.jdbc.url=jdbc:postgresql://postgres:5432/kogito
+      KOGITO_QUARKUS_JVM_PROPS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     extra_hosts:
       - "${DOCKER_GATEWAY_HOST}:host-gateway"
 
