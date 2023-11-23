@@ -100,7 +100,7 @@ services:
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
-      DB_DATABASE: kogito
+      DB_DATABASE: keycloak
       DB_USER: kogito-user
       DB_SCHEMA: public
       DB_PASSWORD: kogito-pass

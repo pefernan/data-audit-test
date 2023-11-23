@@ -5,7 +5,7 @@ CREATE ROLE "kogito-user" WITH
     CREATEDB
     CREATEROLE
     NOREPLICATION
-    ENCRYPTED PASSWORD 'md54adb613a8ffdd707e032c918d791e2e5';
+    PASSWORD 'kogito-pass';
 
 CREATE DATABASE kogito
     WITH
@@ -24,3 +24,9 @@ CREATE DATABASE keycloak
     LC_CTYPE = 'en_US.utf8'
     TABLESPACE = pg_default
     CONNECTION LIMIT = -1;
+
+GRANT ALL PRIVILEGES ON DATABASE kogito TO "kogito-user";
+GRANT ALL PRIVILEGES ON DATABASE kogito TO postgres;
+
+GRANT ALL PRIVILEGES ON DATABASE keycloak TO "kogito-user";
+GRANT ALL PRIVILEGES ON DATABASE keycloak TO postgres;
