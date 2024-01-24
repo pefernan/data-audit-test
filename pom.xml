@@ -42,8 +42,8 @@
     <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
     <kogito.bom.group-id>org.kie.kogito</kogito.bom.group-id>
     <kogito.bom.artifact-id>kogito-bom</kogito.bom.artifact-id>
-    <kogito.bom.version>2.0.0-SNAPSHOT</kogito.bom.version>
-    <version.org.kie.kogito>2.0.0-SNAPSHOT</version.org.kie.kogito>
+    <kogito.bom.version>999-SNAPSHOT</kogito.bom.version>
+    <version.org.kie.kogito>999-SNAPSHOT</version.org.kie.kogito>
   </properties>
 
   <modules>

@@ -32,7 +32,7 @@
 
   <properties>
     <kogito.di.enabled>false</kogito.di.enabled>
-    <version.org.springframework.boot>2.6.6</version.org.springframework.boot>
+    <version.org.springframework.boot>3.0.5</version.org.springframework.boot>
   </properties>
 
   <dependencyManagement>
@@ -105,17 +105,17 @@
     <dependency>
       <groupId>org.kie.kogito</groupId>
       <artifactId>kogito-addons-data-audit-jpa-springboot</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
+      <version>999-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.kie.kogito</groupId>
       <artifactId>kogito-addons-data-audit-springboot</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
+      <version>999-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-ui</artifactId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
     </dependency>
   </dependencies>
 
@@ -150,7 +150,7 @@
           <name>container</name>
         </property>
       </activation>
-      <build>
+      <!--<build>
         <plugins>
           <plugin>
             <groupId>com.google.cloud.tools</groupId>
@@ -165,12 +165,12 @@
             </executions>
             <configuration>
               <to>
-                <image>dev.local/${user.name}/kogito-example-service-springboot:1.0-SNAPSHOT</image>
+                <image>dev.local/${user.name}/kogito-data-audit-springboot-example-service:1.0-SNAPSHOT</image>
               </to>
             </configuration>
           </plugin>
         </plugins>
-      </build>
+      </build>-->
     </profile>
   </profiles>
 </project>
